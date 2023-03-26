@@ -1,20 +1,14 @@
-# -*- coding: utf-8 -*-
-"""
-Editor : GH
-
-"""
-
 from ast import dump
-from PyQt5 import QtCore,QtGui,QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from scapy.all import *
 import sys
 import os
-from scapy.all import *
 import time
 
-class SnifferGui(object):
+class Gui(object):
     def setupUi(self, MainWindow):
         self.MainWindow = MainWindow
         self.startTime = None
@@ -22,19 +16,17 @@ class SnifferGui(object):
         self.iface = None
         self.packList = []
         global counts
-        global displays
         counts = 0
-        displays = 0
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1400, 800)
         MainWindow.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
-        # central widget
+        
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        # 顶部栏 状态栏 菜单栏
+
         self.gridLayoutBar = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayoutBar.setObjectName("gridLayoutBar")
-        # 主显示
+
         self.gridLayoutMainShow = QtWidgets.QGridLayout()
         self.gridLayoutMainShow.setObjectName("gridLayoutMainShow")
 
@@ -51,7 +43,7 @@ class SnifferGui(object):
         self.textBrowserShow.setObjectName("textBrowserShow")
         self.horizontalLayout.addWidget(self.textBrowserShow)
 
-        self.gridLayoutMainShow.addLayout(self.horizontalLayout, 2, 0, 1, 1) # rowIndex, colIndex, rowWidth, colWidth
+        self.gridLayoutMainShow.addLayout(self.horizontalLayout, 2, 0, 1, 1)
 
 
         # Packet Details
@@ -93,20 +85,11 @@ class SnifferGui(object):
         self.gridLayoutMainShow.addWidget(self.tableWidget, 0, 0, 1, 1)
         self.tableWidget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.contextMenu = QMenu(self.tableWidget)
-        self.saveAction = self.contextMenu.addAction(u'另存为cap')
-        self.TraceAction = self.contextMenu.addAction(u'追踪TCP')
+        self.saveAction = self.contextMenu.addAction(u'save')
+        self.TraceAction = self.contextMenu.addAction(u'trace(TCP)')
         
-
-        # 顶部工具栏 菜单栏 状态栏
         self.gridLayoutBar.addLayout(self.gridLayoutMainShow, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
-        '''
-        菜单栏暂时不做，因为只做一部分功能，作为功能栏就行了。当功能达到一定规模就可以分类形成菜单栏
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1244, 26))
-        self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        '''
         
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -121,41 +104,30 @@ class SnifferGui(object):
         self.toolbar.addWidget(self.comboBoxIfaces)
         self.toolbar.addSeparator()
 
-        QToolTip.setFont(QFont('SansSerif', 30))
+        QToolTip.setFont(QFont('SansSerif', 10))
 
         self.buttonStart = QtWidgets.QPushButton()
-        self.buttonStart.setIcon(QIcon("./static/start.png"))
-        self.buttonStart.setStyleSheet("background:rgba(0,0,0,0);border:1px solid rgba(0,0,0,0);border-radius:5px;")
-        self.buttonStart.setToolTip("开始捕获")
+        self.buttonStart.setIcon(QIcon("./icons/start.jpeg"))
+        self.buttonStart.setStyleSheet("background:rgba(0,0,0,0);"
+                                        "border:3px solid rgba(0,0,0,0);"
+                                        "border-radius:10px;")
         self.toolbar.addWidget(self.buttonStart)
         self.toolbar.addSeparator()
 
         self.buttonPause = QtWidgets.QPushButton()
-        self.buttonPause.setIcon(QIcon("./static/pause.png"))
-        self.buttonPause.setStyleSheet("background:rgba(0,0,0,0);border:1px solid rgba(0,0,0,0);border-radius:5px;")
-        self.buttonPause.setToolTip("暂停捕获")
+        self.buttonPause.setIcon(QIcon("./icons/pause.jpeg"))
+        self.buttonPause.setStyleSheet("background:rgba(0,0,0,0);"
+                                        "border:3px solid rgba(0,0,0,0);"
+                                        "border-radius:10px;")
         self.toolbar.addWidget(self.buttonPause)
         self.toolbar.addSeparator()
 
         self.buttonFilter = QtWidgets.QPushButton()
-        self.buttonFilter.setIcon(QIcon("./static/filter.png"))
-        self.buttonFilter.setStyleSheet("background:rgba(0,0,0,0);border:1px solid rgba(0,0,0,0);border-radius:5px;")
-        self.buttonFilter.setToolTip("先停止捕获，捕获前过滤筛选")
+        self.buttonFilter.setIcon(QIcon("./icons/filter.jpeg"))
+        self.buttonFilter.setStyleSheet("background:rgba(0,0,0,0);"
+                                        "border:3px solid rgba(0,0,0,0);"
+                                        "border-radius:10px;")
         self.toolbar.addWidget(self.buttonFilter)
-        self.toolbar.addSeparator()
-
-        self.buttonPostFilter = QtWidgets.QPushButton()
-        self.buttonPostFilter.setIcon(QIcon("./static/search.png"))
-        self.buttonPostFilter.setStyleSheet("background:rgba(0,0,0,0);border:1px solid rgba(0,0,0,0);border-radius:5px;")
-        self.buttonPostFilter.setToolTip("先停止捕获，捕获后过滤筛选")
-        self.toolbar.addWidget(self.buttonPostFilter)
-        self.toolbar.addSeparator()
-
-        self.buttonRe = QtWidgets.QPushButton()
-        self.buttonRe.setIcon(QIcon("./static/reset.png"))
-        self.buttonRe.setStyleSheet("background:rgba(0,0,0,0);border:1px solid rgba(0,0,0,0);border-radius:5px;")
-        self.buttonRe.setToolTip("清空捕获后筛选记录,显示所有结果")
-        self.toolbar.addWidget(self.buttonRe)
         self.toolbar.addSeparator()
         
         self.retranslateUi(MainWindow)
@@ -163,57 +135,51 @@ class SnifferGui(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "SnifferGui"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Simple Sniffer"))
         item = self.tableWidget.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "序号"))
+        item.setText(_translate("MainWindow", "No."))
         item = self.tableWidget.horizontalHeaderItem(1)
-        item.setText(_translate("MainWindow", "时间"))
+        item.setText(_translate("MainWindow", "Time"))
         item = self.tableWidget.horizontalHeaderItem(2)
-        item.setText(_translate("MainWindow", "源地址"))
+        item.setText(_translate("MainWindow", "Source"))
         item = self.tableWidget.horizontalHeaderItem(3)
-        item.setText(_translate("MainWindow", "目的地址"))
+        item.setText(_translate("MainWindow", "Destination"))
         item = self.tableWidget.horizontalHeaderItem(4)
-        item.setText(_translate("MainWindow", "协议"))
+        item.setText(_translate("MainWindow", "Protocol"))
         item = self.tableWidget.horizontalHeaderItem(5)
-        item.setText(_translate("MainWindow", "长度"))
+        item.setText(_translate("MainWindow", "Length"))
         item = self.tableWidget.horizontalHeaderItem(6)
-        item.setText(_translate("MainWindow", "信息"))
-        self.toolbar.setWindowTitle(_translate("MainWindow", "工具栏"))
-        #self.buttonStart.setText(_translate("MainWindow", "开始"))
+        item.setText(_translate("MainWindow", "Info"))
+        self.buttonStart.setText(_translate("MainWindow", "Start"))
+        self.buttonPause.setText(_translate("MainWindow", "Pause"))
+        self.buttonFilter.setText(_translate("MainWindow", "Filter"))
 
-        self.tableWidget.horizontalHeader().setSectionsClickable(False) #可以禁止点击表头的列
-        self.tableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows) #设置 不可选择单个单元格，只可选择一行。
-        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) #设置表格不可更改
-        self.tableWidget.verticalHeader().setVisible(False) #去掉垂直表头
-        self.tableWidget.setColumnWidth(0,60)
-        self.tableWidget.setColumnWidth(2,150)
-        self.tableWidget.setColumnWidth(3,150)
-        self.tableWidget.setColumnWidth(4,60)
-        self.tableWidget.setColumnWidth(5,60)
-        self.tableWidget.setColumnWidth(6,600)
+        self.tableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows) 
+        self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget.verticalHeader().setVisible(False)
+        self.tableWidget.setColumnWidth(0, 60)
+        self.tableWidget.setColumnWidth(2, 200)
+        self.tableWidget.setColumnWidth(3, 200)
+        self.tableWidget.setColumnWidth(4, 100)
+        self.tableWidget.setColumnWidth(5, 60)
+        self.tableWidget.setColumnWidth(6, 600)
 
-        self.treeWidget.setHeaderHidden(True) # 去掉表头
+        self.treeWidget.setHeaderHidden(True)
         self.treeWidget.setColumnCount(1)
 
         self.timer = QTimer(self.MainWindow)
         self.timer.timeout.connect(self.statistics)
-        #开启统计
         self.timer.start(1000)
 
     def showContextMenu(self):
-        '''
-        右键点击时调用的函数
-        '''
-        self.contextMenu.exec_(QCursor.pos())
+        self.contextMenu.exec_(QCursor.pos()) # when right button click
 
     def setAdapterIfaces(self, c):
         self.comboBoxIfaces.addItems(c)
 
     def setTableItems(self, res):
         global counts
-        global displays
         counts += 1
-        displays = counts
         if res :
             row = self.tableWidget.rowCount()
             self.tableWidget.insertRow(row)
@@ -227,158 +193,158 @@ class SnifferGui(object):
             self.packList.append(res[6])
     
     def setLayer_5(self,row,times):
-        num = self.tableWidget.item(row,0).text()
-        Time = self.tableWidget.item(row,1).text()
-        length = self.tableWidget.item(row,5).text()
+        num = self.tableWidget.item(row, 0).text()
+        Time = self.tableWidget.item(row, 1).text()
+        length = self.tableWidget.item(row, 5).text()
         iface = self.iface
-        timeformat = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(times))
+        timeformat = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(times))
         Frame = QtWidgets.QTreeWidgetItem(self.treeWidget)
-        Frame.setText(0,'Frame %s：%s bytes on %s' % (num,length,iface))
+        Frame.setText(0, 'Frame %s: %s bytes on %s' % (num,length,iface))
         FrameIface = QtWidgets.QTreeWidgetItem(Frame)
-        FrameIface.setText(0,'网卡设备：%s' % iface)
+        FrameIface.setText(0, 'Device: %s' % iface)
         FrameArrivalTime = QtWidgets.QTreeWidgetItem(Frame)
-        FrameArrivalTime.setText(0,'到达时间：%s' % timeformat)
+        FrameArrivalTime.setText(0, 'Arrive time: %s' % timeformat)
         FrameTime = QtWidgets.QTreeWidgetItem(Frame)
-        FrameTime.setText(0,'距离第一帧时间：%s' % Time)
+        FrameTime.setText(0, 'Time after first: %s' % Time)
         FrameNumber = QtWidgets.QTreeWidgetItem(Frame)
-        FrameNumber.setText(0,'序号：%s' % num)
+        FrameNumber.setText(0, 'Number: %s' % num)
         FrameLength = QtWidgets.QTreeWidgetItem(Frame)
-        FrameLength.setText(0,'帧长度：%s' % length)
+        FrameLength.setText(0, 'Frame length: %s' % length)
 
     def setLayer_4(self,packet):
         if packet.layer_4['name']  == 'Ethernet':
             Ethernet_ = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            Ethernet_.setText(0,packet.layer_4['info'])
+            Ethernet_.setText(0, packet.layer_4['info'])
             EthernetDst = QtWidgets.QTreeWidgetItem(Ethernet_)
-            EthernetDst.setText(0,'目的MAC地址(dst)：'+ packet.layer_4['dst'])
+            EthernetDst.setText(0, 'Destination MAC address: '+ packet.layer_4['dst'])
             EthernetSrc = QtWidgets.QTreeWidgetItem(Ethernet_)
-            EthernetSrc.setText(0,'源MAC地址(src)：'+ packet.layer_4['src'])
+            EthernetSrc.setText(0, 'Source MAC address: '+ packet.layer_4['src'])
             EthernetType = QtWidgets.QTreeWidgetItem(Ethernet_)
-            EthernetType.setText(0,'协议类型(type)：'+ packet.layer_3['name'])
+            EthernetType.setText(0, 'Protocol: '+ packet.layer_3['name'])
         elif packet.layer_4['name']  == 'Loopback':
             Loopback_ = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            Loopback_.setText(0,packet.layer_4['info'])
+            Loopback_.setText(0, packet.layer_4['info'])
             LoopbackType = QtWidgets.QTreeWidgetItem(Loopback_)
-            LoopbackType.setText(0,'协议类型(type)：'+ packet.layer_3['name'])
+            LoopbackType.setText(0, 'Protocol: '+ packet.layer_3['name'])
         
     def setLayer_3(self,packet):
         if packet.layer_3['name'] == 'IPv4':
             IPv4 = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            IPv4.setText(0,packet.layer_3['info'])
+            IPv4.setText(0, packet.layer_3['info'])
             IPv4Version = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Version.setText(0,'版本(version)：%s'% packet.layer_3['version'])
+            IPv4Version.setText(0, 'Version: %s'% packet.layer_3['version'])
             IPv4Ihl = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Ihl.setText(0,'包头长度(ihl)：%s' % packet.layer_3['ihl'])
+            IPv4Ihl.setText(0, 'Header length: %s' % packet.layer_3['ihl'])
             IPv4Tos = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Tos.setText(0,'服务类型(tos)：%s'% packet.layer_3['tos'])
+            IPv4Tos.setText(0, 'TOS: %s'% packet.layer_3['tos'])
             IPv4Len = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Len.setText(0,'总长度(len)：%s' % packet.layer_3['len']) #IP报文的总长度。报头的长度和数据部分的长度之和。
+            IPv4Len.setText(0, 'Len: %s' % packet.layer_3['len'])
             IPv4Id = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Id.setText(0,'标识(id)：%s' % packet.layer_3['id'])  #唯一的标识主机发送的每一分数据报。通常每发送一个报文，它的值加一。当IP报文长度超过传输网络的MTU（最大传输单元）时必须分片，这个标识字段的值被复制到所有数据分片的标识字段中，使得这些分片在达到最终目的地时可以依照标识字段的内容重新组成原先的数据。
+            IPv4Id.setText(0, 'ID: %s' % packet.layer_3['id'])
             IPv4Flags = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Flags.setText(0,'标志(flags)：%s' % packet.layer_3['flag']) #R、DF、MF三位。目前只有后两位有效，DF位：为1表示不分片，为0表示分片。MF：为1表示“更多的片”，为0表示这是最后一片。
+            IPv4Flags.setText(0, 'flags: %s' % packet.layer_3['flag'])
             IPv4Chksum = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Chksum.setText(0,'校验和(chksum)：0x%x' % packet.layer_3['chksum'])
+            IPv4Chksum.setText(0, 'CheckSum: 0x%x' % packet.layer_3['chksum'])
             IPv4Src = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Src.setText(0,'源IP地址(src)：%s' % packet.layer_3['src'])
+            IPv4Src.setText(0, 'Source IP address: %s' % packet.layer_3['src'])
             IPv4Dst = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Dst.setText(0,'目的IP地址(dst)：%s' % packet.layer_3['dst'])
+            IPv4Dst.setText(0, 'Destination IP address: %s' % packet.layer_3['dst'])
             IPv4Options = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Options.setText(0,'可选部分(options)：%s' % packet.layer_3['opt'])
+            IPv4Options.setText(0, 'Options: %s' % packet.layer_3['opt'])
             IPv4Proto = QtWidgets.QTreeWidgetItem(IPv4)
-            IPv4Proto.setText(0,'协议类型(proto)：%s' % packet.layer_2['name'])
+            IPv4Proto.setText(0, 'Protocol: %s' % packet.layer_2['name'])
         elif packet.layer_3['name'] == 'IPv6':
             IPv6_ = QtWidgets.QTreeWidgetItem(self.treeWidget)
             IPv6_.setText(0, packet.layer_3['info'])
             IPv6Version = QtWidgets.QTreeWidgetItem(IPv6_)
-            IPv6Version.setText(0,'版本(version)：%s'% packet.layer_3['version'])
+            IPv6Version.setText(0, 'Version: %s'% packet.layer_3['version'])
             IPv6Src = QtWidgets.QTreeWidgetItem(IPv6_)
-            IPv6Src.setText(0,'源IP地址(src)：%s' % packet.layer_3['src'])
+            IPv6Src.setText(0, 'Source IP address: %s' % packet.layer_3['src'])
             IPv6Dst = QtWidgets.QTreeWidgetItem(IPv6_)
-            IPv6Dst.setText(0,'目的IP地址(dst)：%s' % packet.layer_3['dst'])
+            IPv6Dst.setText(0, 'Destination IP address: %s' % packet.layer_3['dst'])
             IPv6Proto = QtWidgets.QTreeWidgetItem(IPv6_)
-            IPv6Proto.setText(0,'协议类型(proto)：'+ packet.layer_2['name'])
+            IPv6Proto.setText(0, 'Protocol: '+ packet.layer_2['name'])
         elif packet.layer_3['name'] == 'ARP':
             arp = QtWidgets.QTreeWidgetItem(self.treeWidget)
             arp.setText(0, packet.layer_3['name'] + " "+ packet.layer_3['info'])
             arpHwtype = QtWidgets.QTreeWidgetItem(arp)
-            arpHwtype.setText(0,'硬件类型(hwtype)：0x%x' % packet.layer_3['hwtype']) #1代表是以太网。
+            arpHwtype.setText(0, 'HW Type: 0x%x' % packet.layer_3['hwtype'])
             arpPtype = QtWidgets.QTreeWidgetItem(arp)
-            arpPtype.setText(0,'协议类型(ptype)：0x%x' % packet.layer_3['ptype']) #表明上层协议的类型,这里是0x0800,表示上层协议是IP协议
+            arpPtype.setText(0, 'Protocol number: 0x%x' % packet.layer_3['ptype'])
             arpHwlen = QtWidgets.QTreeWidgetItem(arp)
-            arpHwlen.setText(0,'硬件地址长度(hwlen)：%s' % packet.layer_3['hwlen'])
+            arpHwlen.setText(0, 'HW address length: %s' % packet.layer_3['hwlen'])
             arpPlen = QtWidgets.QTreeWidgetItem(arp)
-            arpPlen.setText(0,'协议长度(plen)：%s' % packet.layer_3['len'])
+            arpPlen.setText(0, 'Protocol length: %s' % packet.layer_3['len'])
             arpOp = QtWidgets.QTreeWidgetItem(arp)
-            arpOp.setText(0,'操作类型(op)： %s' % packet.layer_3['info'])
+            arpOp.setText(0, 'OP Type: %s' % packet.layer_3['info'])
             arpHwsrc = QtWidgets.QTreeWidgetItem(arp)
-            arpHwsrc.setText(0,'源MAC地址(hwsrc)：%s' % packet.layer_3['hwsrc'])
+            arpHwsrc.setText(0, 'Source MAC address: %s' % packet.layer_3['hwsrc'])
             arpPsrc = QtWidgets.QTreeWidgetItem(arp)
-            arpPsrc.setText(0,'源IP地址(psrc)：%s' % packet.layer_3['src'])
+            arpPsrc.setText(0, 'Source IP address: %s' % packet.layer_3['src'])
             arpHwdst = QtWidgets.QTreeWidgetItem(arp)
-            arpHwdst.setText(0,'目的MAC地址(hwdst)：%s' % packet.layer_3['hwdst'])
+            arpHwdst.setText(0, 'Destination MAC address: %s' % packet.layer_3['hwdst'])
             arpPdst = QtWidgets.QTreeWidgetItem(arp)
-            arpPdst.setText(0,'目的IP地址(pdst)：%s' % packet.layer_3['dst'])
+            arpPdst.setText(0, 'Destination IP address: %s' % packet.layer_3['dst'])
 
     def setLayer_2(self,packet):
         if packet.layer_2['name'] == 'TCP':
             tcp = QtWidgets.QTreeWidgetItem(self.treeWidget)
             tcp.setText(0, packet.layer_2['info'])
             tcpSport = QtWidgets.QTreeWidgetItem(tcp)
-            tcpSport.setText(0,'源端口(sport)：%s' % packet.layer_2['src'])
+            tcpSport.setText(0, 'Source Port: %s' % packet.layer_2['src'])
             tcpDport = QtWidgets.QTreeWidgetItem(tcp)
-            tcpDport.setText(0,'目的端口(sport)：%s' % packet.layer_2['dst'])
+            tcpDport.setText(0, 'Destination Port: %s' % packet.layer_2['dst'])
             tcpSeq = QtWidgets.QTreeWidgetItem(tcp)
-            tcpSeq.setText(0,'序号(Seq)：%s' % packet.layer_2['seq'])
+            tcpSeq.setText(0, 'Seq: %s' % packet.layer_2['seq'])
             tcpAck = QtWidgets.QTreeWidgetItem(tcp)
-            tcpAck.setText(0,'确认号(Ack)：%s' % packet.layer_2['ack'])
+            tcpAck.setText(0, 'Ack: %s' % packet.layer_2['ack'])
             tcpDataofs = QtWidgets.QTreeWidgetItem(tcp)
-            tcpDataofs.setText(0,'数据偏移(dataofs)：%s' % packet.layer_2['dataofs'])
+            tcpDataofs.setText(0, 'Data offset: %s' % packet.layer_2['dataofs'])
             tcpReserved = QtWidgets.QTreeWidgetItem(tcp)
-            tcpReserved.setText(0,'保留(reserved)：%s' % packet.layer_2['reserved'])
+            tcpReserved.setText(0, 'Reserved: %s' % packet.layer_2['reserved'])
             tcpFlags = QtWidgets.QTreeWidgetItem(tcp)
-            tcpFlags.setText(0,'标志(flags)：%s' % packet.layer_2['flag'])
+            tcpFlags.setText(0, 'Flag: %s' % packet.layer_2['flag'])
         elif packet.layer_2['name'] == 'UDP':
             udp = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            udp.setText(0,packet.layer_2['info'])
+            udp.setText(0, packet.layer_2['info'])
             udpSport = QtWidgets.QTreeWidgetItem(udp)
-            udpSport.setText(0,'源端口(sport)：%s' % packet.layer_2['src'])
+            udpSport.setText(0, 'Source port: %s' % packet.layer_2['src'])
             udpDport = QtWidgets.QTreeWidgetItem(udp)
-            udpDport.setText(0,'目的端口(dport)：%s' % packet.layer_2['dst'])
+            udpDport.setText(0, 'Destination port: %s' % packet.layer_2['dst'])
             udpLen = QtWidgets.QTreeWidgetItem(udp)
-            udpLen.setText(0,'长度(len)：%s' % packet.layer_2['len'])
+            udpLen.setText(0, 'Length: %s' % packet.layer_2['len'])
             udpChksum = QtWidgets.QTreeWidgetItem(udp)
-            udpChksum.setText(0,'校验和(chksum)：0x%x' % packet.layer_2['chksum'])
+            udpChksum.setText(0, 'CheckSum: 0x%x' % packet.layer_2['chksum'])
         elif packet.layer_2['name'] == 'ICMP':
             icmp = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            icmp.setText(0,'ICMP')
+            icmp.setText(0, 'ICMP')
             icmpType = QtWidgets.QTreeWidgetItem(icmp)
-            icmpType.setText(0,'类型(type)：%s' % packet.layer_2['info'])  #占一字节，标识ICMP报文的类型，目前已定义了14种，从类型值来看ICMP报文可以分为两大类。第一类是取值为1~127的差错报文，第2类是取值128以上的信息报文。
+            icmpType.setText(0, 'Type: %s' % packet.layer_2['info'])
             icmpCode = QtWidgets.QTreeWidgetItem(icmp)
-            icmpCode.setText(0,'代码(code)：%s' % packet.layer_2['code'])  #占一字节，标识对应ICMP报文的代码。它与类型字段一起共同标识了ICMP报文的详细类型。
+            icmpCode.setText(0, 'Code: %s' % packet.layer_2['code'])
             icmpChksum = QtWidgets.QTreeWidgetItem(icmp)
-            icmpChksum.setText(0,'校验和(chksum)：0x%x' % packet.layer_2['chksum'])
+            icmpChksum.setText(0, 'CheckSum: 0x%x' % packet.layer_2['chksum'])
             icmpId = QtWidgets.QTreeWidgetItem(icmp)
-            icmpId.setText(0,'标识(id)：%s' % packet.layer_2['id'])
+            icmpId.setText(0, 'ID: %s' % packet.layer_2['id'])
         elif packet.layer_2['name'] == 'IGMP':
             igmp = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            igmp.setText(0,packet.layer_2['info'])
+            igmp.setText(0, packet.layer_2['info'])
             igmpLength = QtWidgets.QTreeWidgetItem(igmp)
-            igmpLength.setText(0,'length：%s' % packet.layer_2['len'])
+            igmpLength.setText(0, 'Length: %s' % packet.layer_2['len'])
         else:
             waitproto =  QtWidgets.QTreeWidgetItem(self.treeWidget)
-            waitproto.setText(0,'协议号： %s' % packet.layer_2['name'])
+            waitproto.setText(0, 'Protocol: %s' % packet.layer_2['name'])
             waitprotoInfo = QtWidgets.QTreeWidgetItem(waitproto)
-            waitprotoInfo.setText(0,packet.layer_2['info'])
+            waitprotoInfo.setText(0, packet.layer_2['info'])
 
     def setLayer_1(self,packet):
         waitproto =  QtWidgets.QTreeWidgetItem(self.treeWidget)
         waitproto.setText(0, packet.layer_1['name'])
         waitprotoInfo = QtWidgets.QTreeWidgetItem(waitproto)
-        waitprotoInfo.setText(0,packet.layer_1['info'])
+        waitprotoInfo.setText(0, packet.layer_1['info'])
 
     def showItemDetail(self):
-        row = self.tableWidget.currentRow()     #获取当前行数
+        row = self.tableWidget.currentRow() 
         mypacket = self.packList[row]
 
         self.treeWidget.clear()
@@ -393,149 +359,61 @@ class SnifferGui(object):
 
         # Packet in Binary
         self.textBrowserShow.clear()
-        # content = mypacket.packet.show(dump=True) # content
         content = hexdump(mypacket.packet, dump=True)
         self.textBrowserShow.append(content)
         
        
     def statistics(self):
         global counts
-        global displays
         if counts != 0:
-            percent = '{:.1f}'.format(displays/counts*100)
-            self.statusbar.showMessage('捕获：%s   已显示：%s (%s%%)' % (counts,displays,percent))
+            self.statusbar.showMessage('Capture: %s' % (counts))
 
     def clearTable(self):
         global counts
-        global displays
         counts = 0
-        displays = 0
         self.tableWidget.setRowCount(0)
         self.treeWidget.clear()
         self.textBrowserShow.clear()
         self.packList = []
 
-    def buildFilter(self):
-        list = ["指定源IP地址","指定目的IP地址", "指定源端口","指定目的端口","指定协议类型"]   
-        item, ok = QInputDialog.getItem(self.MainWindow, "捕获前选项","规则列表", list, 1, False)
+    def simpleFilter(self):
+        list = ['Source IP', 'Destination IP', 'Source Port', 'Destination Port', 'Protocol type']   
+        item, ok = QInputDialog.getItem(self.MainWindow, "Filter", "Rules", list, 1, False)
         if ok:
-            if item=="指定源IP地址":
-                filter,ok_1 = QInputDialog.getText(self.MainWindow, "标题","请输入指定源IP地址:",QLineEdit.Normal, "*.*.*.*")
-                rule = "src host "+filter
-            elif item =="指定目的IP地址"  :
-                filter,ok_2 = QInputDialog.getText(self.MainWindow, "标题","请输入指定目的IP地址:",QLineEdit.Normal, "*.*.*.*")
-                rule= "dst host "+filter
-            elif item =="指定源端口":
-                filter,ok_3 = QInputDialog.getInt(self.MainWindow, "标题","请输入指定源端口:",80, 0, 65535)
-                rule="src port "+str(filter)
-            elif item =="指定目的端口":
-                filter,ok_4 = QInputDialog.getInt(self.MainWindow, "标题","请输入指定目的端口:",80, 0, 65535)
-                rule ="dst port "+str(filter)
-            elif item =="指定协议类型" :
-                filter,ok_2 = QInputDialog.getText(self.MainWindow, "标题","请输入指定协议类型:",QLineEdit.Normal, "icmp/arp/tcp/udp/igmp/...")
-                rule =filter
-            rule=rule.lower()
+            if item == 'Protocol type':
+                filter, ok_0 = QInputDialog.getText(self.MainWindow, 'Hello!', "Pls input Protocol type: ", QLineEdit.Normal, 'TCP/UDP/HTTP/TLS/ICMP/...')
+                rule = filter
+            elif item == 'Source IP':
+                filter, ok_1 = QInputDialog.getText(self.MainWindow, 'Hello!', 'Pls input Source IP: ', QLineEdit.Normal, '0.0.0.0')
+                rule = 'src host ' + filter
+            elif item == 'Destination IP'  :
+                filter, ok_2 = QInputDialog.getText(self.MainWindow, 'Hello!', 'Pls input Destination IP: ', QLineEdit.Normal, '0.0.0.0')
+                rule = 'dst host ' + filter
+            elif item == 'Source Port':
+                filter, ok_3 = QInputDialog.getInt(self.MainWindow, 'Hello!', 'Pls input Source Port: ', 80, 0, 65535)
+                rule = 'src port ' + str(filter)
+            elif item == 'Destination Port':
+                filter, ok_4 = QInputDialog.getInt(self.MainWindow, 'Hello!', 'Pls input Destination Port: ', 80, 0, 65535)
+                rule = 'dst port ' + str(filter)
+            else:
+                rule = ''
+            rule = rule.lower()
             self.filter = rule
 
-    def postFilter(self):
-        list = ["指定源IP地址","指定目的IP地址", "指定源端口","指定目的端口","指定协议类型"]   
-        item, ok = QInputDialog.getItem(self.MainWindow, "捕获后过滤选项","规则列表", list, 1, False)
-        if ok:
-            if item=="指定源IP地址":
-                filter,ok_1 = QInputDialog.getText(self.MainWindow, "标题","请输入指定源IP地址:",QLineEdit.Normal, "127.0.0.1")
-                if ok_1:
-                    self.postFilter_2(0,filter.lower())
-            elif item =="指定目的IP地址"  :
-                filter,ok_2 = QInputDialog.getText(self.MainWindow, "标题","请输入指定目的IP地址:",QLineEdit.Normal, "127.0.0.1")
-                if ok_2:
-                    self.postFilter_2(1,filter.lower())
-            elif item =="指定源端口":
-                filter,ok_3 = QInputDialog.getInt(self.MainWindow, "标题","请输入指定源端口:",80, 0, 65535)
-                if ok_3:
-                    self.postFilter_2(2,filter.lower())
-            elif item =="指定目的端口":
-                filter,ok_4 = QInputDialog.getInt(self.MainWindow, "标题","请输入指定目的端口:",80, 0, 65535)
-                if ok_4:    
-                    self.postFilter_2(3,filter.lower())
-            elif item =="指定协议类型" :
-                filter,ok_5 = QInputDialog.getText(self.MainWindow, "标题","请输入指定协议类型:",QLineEdit.Normal, "icmp/arp/tcp/udp/igmp/...")
-                if ok_5:
-                    self.postFilter_2(4,filter.lower())
-                    
-    def postFilter_2(self,index,filter):
-        global displays
-        displays = 0
-        rows = self.tableWidget.rowCount()
-        if index == 0:
-            for row in range(rows):
-                if str(self.packList[row].layer_3['src']).lower() != filter :
-                    self.tableWidget.setRowHidden(row,True)
-                else:
-                    self.tableWidget.setRowHidden(row,False)
-                    displays+=1
-        elif index == 1:
-            for row in range(rows):
-                if str(self.packList[row].layer_3['dst']).lower() != filter :
-                    self.tableWidget.setRowHidden(row,True)
-                else:
-                    self.tableWidget.setRowHidden(row,False)
-                    displays+=1
-        elif index == 2:
-            for row in range(rows):
-                if str(self.packList[row].layer_2['src']).lower() != filter :
-                    self.tableWidget.setRowHidden(row,True)
-                else:
-                    self.tableWidget.setRowHidden(row,False)
-                    displays+=1
-        elif index == 3:
-            for row in range(rows):
-                if str(self.packList[row].layer_2['dst']).lower() != filter :
-                    self.tableWidget.setRowHidden(row,True)
-                else:
-                    self.tableWidget.setRowHidden(row,False)
-                    displays+=1
-        else:
-            for row in range(rows):
-                filter = filter.upper()
-                if self.packList[row].layer_2['name'] != filter and self.packList[row].layer_3['name'] != filter and \
-                    self.packList[row].layer_1['name'] != filter :
-                    self.tableWidget.setRowHidden(row,True)
-                else:
-                    self.tableWidget.setRowHidden(row,False)
-                    displays+=1
-
-    def Trace(self):
+    def Trace(self): # TODO: should pause before
         row = self.tableWidget.currentRow()
         if self.packList[row].layer_2['name'] == 'TCP':
-            list = ["根据源ip + 目的ip + 源端口 + 目的端口(进程间通信)",
-                    "根据源ip+源端口(某进程产生的所有包)", 
-                    "根据目的ip + 目的端口(某进程接受的所有包)"]   
-            item, ok = QInputDialog.getItem(self.MainWindow, "TCP追踪","规则列表", list, 1, False)
+            list = ['IP + Port', 'Source IP + Source Port']   
+            item, ok = QInputDialog.getItem(self.MainWindow, 'Trace for TCP', 'Rules', list, 1, False)
             if ok:
-                if item == "根据源ip + 目的ip + 源端口 + 目的端口(进程间通信)":
+                if item == 'IP + Port':
                     keys = 'tcptrace'
-                elif item == "根据源ip+源端口(某进程产生的所有包)":
-                    keys = 'tcpSdTrace'
-                elif item == "根据目的ip + 目的端口(某进程接受的所有包)":
-                    keys = 'tcpRcTrace'     
+                elif item == 'Source IP + Source Port':
+                    keys = 'tcpSdTrace'  
                 mypacket = self.packList[row]
-                # for row in range(len(self.packList)):                   # TODO: should pause before
-                #     if self.packList[row].layer_2[keys] == trace:
-                #         self.tableWidget.setRowHidden(row, False)
-                #     else:
-                #         self.tableWidget.setRowHidden(row, True)
-                # content = mypacket.packet.show(dump=True)
-                QtWidgets.QMessageBox.information(None, "追踪TCP流", '追踪TCP流成功！点击确定后将刷新界面！')
+                QtWidgets.QMessageBox.information(None, 'Good!', 'Pls click start button!')
                 return [True, keys, mypacket.layer_2[keys]]
         else:
-            QtWidgets.QMessageBox.critical(None,"错误","非TCP相关协议，无法追踪")
+            QtWidgets.QMessageBox.critical(None, 'Sorry!', 'Trace for only TCP flow now!')
+
     
-    def Reset(self):
-        for row in range(len(self.packList)):
-            self.tableWidget.setRowHidden(row,False)
-
-        
-    
-
-
-
