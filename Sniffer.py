@@ -1,17 +1,12 @@
-# -*- coding: utf-8 -*-
-
-from socket import timeout
-from scapy.all import *
-import os
-import time
-import multiprocessing
-from scapy.layers import http
-import numpy as np
-import matplotlib.pyplot as plt
-import binascii
-from PyQt5 import QtCore,QtGui,QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from scapy.all import *
+from scapy.layers import http
+import os
+import time
+from socket import timeout
+
 
 
 class Sniffer(QtCore.QThread):
@@ -46,11 +41,6 @@ class Sniffer(QtCore.QThread):
         self.conditionFlag = False
         self.cond.wakeAll()   
 
-'''test 
-ifa = "Intel(R) Dual Band Wireless-AC 3168"
-pkg = sniff(iface=ifa,count = 1) 
-'''   
-    
 
 
 
